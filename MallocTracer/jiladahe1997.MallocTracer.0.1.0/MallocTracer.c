@@ -55,7 +55,7 @@ struct HashMap_Iterator {
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
+#include "hashmap.h"
 /* base struct ---------------------------------------------------------------*/
 /* BST二叉搜索树 */
 
@@ -365,7 +365,7 @@ STATIC struct MallocTrancer mallocTrancer;
 STATIC struct HashMap * hashmapPositionAll;
 STATIC struct HashMap * hashmapAddressAll;
 
-STATIC char * getMallocInfo(void);
+STATIC void getMallocInfo(void);
 
 struct MallocTrancer * New_MallocTrancer(void) {
     if(!is_init) {
@@ -376,69 +376,36 @@ struct MallocTrancer * New_MallocTrancer(void) {
     return &mallocTrancer;
 }
 
-#define TABLE1_HEADER \
-"\r\n -----------------------------------------------------------------------------------------------------"\
-"\r\n TABLE1: POSTION-MALLOC/FREE                                                                         |"\
-"\r\n                                                                                                     |"
 
-#define TABLE2_HEADER \
-"\r\n -----------------------------------------------------------------------------------------------------"\
-"\r\n TABLE2: ADDRESS-POSITION                                                                            |"\
-"\r\n                                                                                                     |"
-
-
-STATIC void utils_add_table1_line(char * targetStr, char * position, char * address, char * mallocCount, char * freeCount){
-    char * temp;
-    temp = (char*)malloc(strlen("\r\n  |  |  |       |")+64+10+5+5);
-    sprintf(temp, "\r\n %-64s | %#-10s | %5s | %5s      |", position, address, mallocCount, freeCount);
-    targetStr = (char*)realloc(targetStr, strlen(targetStr) + strlen(temp));
-    strcat(targetStr, temp);
-    free(temp);
-}    
-                                                        
-STATIC void utils_add_table2_line(char * targetStr, char * address, char * position){
-    char * temp;
-    temp = (char*)malloc(strlen("\r\n  |                        |")+64+10);
-    sprintf(temp, "\r\n %-10s | %-64s                       |", address, position);
-    targetStr = (char*)realloc(targetStr, strlen(targetStr) + strlen(temp));
-    strcat(targetStr, temp);
-    free(temp);
-}                                                            
-
-STATIC char * getMallocInfo(void){
+STATIC void getMallocInfo(void){
     struct HashMap_Iterator * iteratorPosition = hashmapPositionAll->createIterator(hashmapPositionAll);
-    char * table1Str = (char*)malloc(strlen(TABLE1_HEADER));
-    strcpy(table1Str, TABLE1_HEADER);
-
-    utils_add_table1_line(table1Str, "POSITION", "ADDRESS" , "MALLOC", "FREE");
-
+    rt_kprintf("\r\n -----------------------------------------------------------------------------------------------------");
+    rt_kprintf("\r\n TABLE1: POSTION-MALLOC/FREE                                                                         |");
+    rt_kprintf("\r\n                                                                                                     |");
+    rt_kprintf("\r\n %-64s | %#-10s | %5s | %5s      |", "POSITION", "ADDRESS" , "MALLOC", "FREE|");
     while(iteratorPosition->hasNext(iteratorPosition)){
         struct Tree_Node * node = (struct Tree_Node*)iteratorPosition->next(iteratorPosition, hashmapPositionAll);
         struct MallocTrancerInfo * info = (struct MallocTrancerInfo*)node->value;
-        char * ptr_address[10] = "";
-        sprintf(ptr_address, "%#ld", (unsigned long)info->ptr_address);
-        utils_add_table1_line(table1Str, info->position, ptr_address, info->mallocCount, info->freeCount);
+        char str[256] = "";
+        snprintf(str, 256, "\r\n %-64s | %#lx | %6d | %6d     |", info->position, (unsigned long)info->ptr_address ,info->mallocCount, info->freeCount);
+        rt_kprintf(str);
     } 
     free(iteratorPosition);
-
-    
-    table1Str = (char*)realloc(table1Str, strlen(table1Str) + strlen(TABLE2_HEADER));
-    strcat(table1Str, TABLE2_HEADER);
-
-    utils_add_table2_line(table1Str, "ADDRESS", "POSITION");
-
+    rt_kprintf("\r\n -----------------------------------------------------------------------------------------------------");
+    rt_kprintf("\r\n TABLE2: ADDRESS-POSITION                                                                            |");
+    rt_kprintf("\r\n                                                                                                     |");
+    rt_kprintf("\r\n %-10s | %-64s                       |", "ADDRESS", "POSITION");
     struct HashMap_Iterator * iteratorAddress = hashmapAddressAll->createIterator(hashmapAddressAll);
     while(iteratorAddress->hasNext(iteratorAddress)){
         struct Tree_Node * node = (struct Tree_Node*)iteratorAddress->next(iteratorAddress, hashmapAddressAll);
         struct MallocTrancerInfo * info = (struct MallocTrancerInfo*)node->value;
-        char * ptr_address[10] = "";
-        sprintf(ptr_address, "%#ld", (unsigned long)info->ptr_address);
-        utils_add_table2_line(table1Str, ptr_address, info->position);
+        char str[256] = "";
+        snprintf(str, 256, "\r\n %-10s | %-64s                       |",node->key ,info->position);
+        rt_kprintf(str);
     } 
-
-    strcat(table1Str, "\r\n -----------------------------------------------------------------------------------------------------");
+    rt_kprintf("\r\n -----------------------------------------------------------------------------------------------------");
     free(iteratorAddress);
-    return table1Str;
+    return;
 }
 
 void * _trace_malloc(size_t size,  const char *file, const char *func,const long line) {

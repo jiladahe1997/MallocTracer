@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>
+<package schemaVersion="1.2" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+    <vendor>jiladahe1997</vendor>
+    <name>MallocTracer::FROM_SCRATCH_GENERATED::NO_CUBE_RULES</name>
+    <description>MallocTracer</description>
+    <url/>
+    <releases>
+        <release version="0.1.0"/>
+    </releases>
+    <keywords>
+        <keyword>IMPLEMENTED_WITH_STM32CUBEMX</keyword>
+    </keywords>
+    <taxonomy>
+        <description Cclass="Utility">Utility</description>
+    </taxonomy>
+    <components>
+        <bundle Cbundle="MallocTracer" Cclass="Utility" Cversion="0.1.0">
+            <description>MallocTracer</description>
+            <doc>E:/newWorkspace/MallocTracer/README.md::README.md</doc>
+            <component Cgroup="Trace" maxInstances="1">
+                <description>None</description>
+                <files>
+                    <file category="header" name="E:/newWorkspace/MallocTracer/src/MallocTracer.h::MallocTracer.h"/>
+                    <file category="source" name="E:/newWorkspace/MallocTracer/src/MallocTracer.c::MallocTracer.c"/>
+                </files>
+            </component>
+        </bundle>
+    </components>
+</package>

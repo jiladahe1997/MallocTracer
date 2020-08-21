@@ -5,7 +5,7 @@
 #define trace_free(ptr) _trace_free(ptr, __FILE__, __FUNCTION__, __LINE__)
 
 struct MallocTrancer {
-   char * (*getMallocInfo)(void);
+   void (*getMallocInfo)(void);
 };
 
 struct MallocTrancer * New_MallocTrancer(void);

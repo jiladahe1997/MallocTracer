@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<IP xmlns="http://mcd.rou.st.com/modules.php?name=mcu" xmlns:ns0="http://www.w3.org/2001/XMLSchema-instance" DBVersion="V4.0" Name="MallocTracer" RootFolder="Packs/jiladahe1997/MallocTracer/0.1.0/" Version="0.1.0" ns0:schemaLocation="http://mcd.rou.st.com/modules.php?name=mcu ../../../../../../../doc/V4/Development/Specifications/db/thirdPartyDb.xsd">
+    <RefConfig Name="UtilityJjMallocTracer">
+        <Component Name="MallocTracerCcUtility:Trace:$MallocTracerCcUtilityJjTrace"/>
+        <ConfigFile Name="MALLOC_TRACER_CONF_H"/>
+    </RefConfig>
+    <RefConfigFile Added="true" Description="config file for malloc tracer" Name="MALLOC_TRACER_CONF_H" Template="default_conf.ftl">
+        <File Category="header" Condition="all" Name="App/MallocTracer_conf.h"/>
+        <Argument Added="true" AddressOf="false" GenericType="simple" Name="MALLOC_TRANCER_STRING_LENGTH_INFO_POSITION" OptimizationCondition="equal"/>
+        <Argument Added="true" AddressOf="false" GenericType="simple" Name="MALLOC_TRANCER_SINGLE_POSITION_MAX_TRANCE" OptimizationCondition="equal"/>
+    </RefConfigFile>
+    <RefBspComponent BspIpName="UART|USART|LPUART" BspModeName="Asynchronous" Name="BSP USART"/>
+    <RefComponent Cclass="MallocTracerCcUtility" Cgroup="Trace" Cversion="0Gg1Gg0">
+        <File Category="header" Condition="" Name="./MallocTracer.h"/>
+        <File Category="source" Condition="" Name="./MallocTracer.c"/>
+    </RefComponent>
+</IP>
