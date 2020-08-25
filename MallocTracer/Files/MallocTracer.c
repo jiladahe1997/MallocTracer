@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "MallocTracer.h"
-
+#include "MallocTracer_conf.h"
 
 
 /* ===================== hashmap.c ===============================*/
@@ -150,6 +150,46 @@ static void * hashmap_get(struct HashMap * hashmap, char * key) {
 	return (t = targetTab->search(targetTab, key)) ? t->value : NULL;
 }
 
+
+static struct Tree_Node * tree_delete_successor(struct Tree_Node * root, char * key) {
+      unsigned long hash = _hash(key);
+
+    if(strcmp(key, root->key)==0) {
+        /* leaf */
+        if(!root->right && !root->left) {
+            if(root->root) {
+                root->root->next = root->next;
+            }
+            free(root);
+            return NULL;
+        }
+
+        /* single child root */
+        else if ((!root->right && root->left) || (root->right && !root->left)) {
+            if(root->root) {
+                root->root->next = root->next;
+            }
+            struct Tree_Node * ret = root->right ? root->right : root->left;
+            free(root);           
+            return ret;
+        }
+        else {
+            printf("target is not successor!");
+            return NULL;
+        }
+    }
+
+    else {
+        if(hash > root->hash) {
+            root->right = tree_delete_successor(root->right, key);
+        }
+        else if (hash < root->hash){
+            root->left = tree_delete_successor(root->left, key);
+        } 
+    }
+    return root;  
+}
+
 /**
  * @brief delete a node from a tree, and return the root of the tree
  */
@@ -157,17 +197,28 @@ static struct Tree_Node * tree_delete(struct Tree_Node * root, char * key) {
     unsigned long hash = _hash(key);
 
     if(strcmp(key, root->key)==0) {
-        free(root->value);
-        free(root->key);
+
         /* leaf */
         if(!root->right && !root->left) {
+            if(root->root) {
+                root->root->next = root->next;
+            }
+            free(root->value);
+            free(root->key);
+            free(root);
             return NULL;
         }
 
         /* single child root */
         else if ((!root->right && root->left) || (root->right && !root->left)) {
-            root = root->right ? root->right : root->left;
-            return root;
+            if(root->root) {
+                root->root->next = root->next;
+            }
+            struct Tree_Node * ret = root->right ? root->right : root->left;
+            free(root->value);
+            free(root->key);
+            free(root);           
+            return ret;
         }
 
         /* tow children root , delete root and recursion each childre find another root */
@@ -177,12 +228,12 @@ static struct Tree_Node * tree_delete(struct Tree_Node * root, char * key) {
             for(;minNode->left!=NULL;) {
                 minNode=minNode->left;
             }
+            root->hash = minNode->hash;
             root->key = minNode->key;
             root->value = minNode->value;
-            root->hash = minNode->hash;
 
             /* delete successor */
-            root->right = tree_delete(root->right, minNode->key);
+            root->right = tree_delete_successor(root->right, minNode->key);
         }
     }
 
@@ -344,11 +395,6 @@ struct HashMap * New_HashMap(){
 /* ===================== hashmap.c end ===============================*/
 
 
-
-
-#define MALLOC_TRANCER_STRING_LENGTH_INFO_POSITION 128
-#define MALLOC_TRANCER_SINGLE_POSITION_MAX_TRANCE  64     // 单个位置最多追踪64次，防止无限追踪内存泄漏
-
 #ifndef STATIC
 #define STATIC static
 #endif
@@ -387,22 +433,24 @@ struct MallocTrancer * New_MallocTrancer(void) {
 "\r\n                                                                                                     |"
 
 
-STATIC void utils_add_table1_line(char * targetStr, char * position, char * address, char * mallocCount, char * freeCount){
+STATIC char * utils_add_table1_line(char * targetStr, char * position, char * address, char * mallocCount, char * freeCount){
     char * temp;
     temp = (char*)malloc(strlen("\r\n  |  |  |       |")+64+10+5+5);
-    sprintf(temp, "\r\n %-64s | %#-10s | %5s | %5s      |", position, address, mallocCount, freeCount);
+    sprintf(temp, "\r\n %-64s | %-10s | %6s | %5s      |", position, address, mallocCount, freeCount);
     targetStr = (char*)realloc(targetStr, strlen(targetStr) + strlen(temp));
     strcat(targetStr, temp);
     free(temp);
+	  return targetStr;
 }    
                                                         
-STATIC void utils_add_table2_line(char * targetStr, char * address, char * position){
+STATIC char * utils_add_table2_line(char * targetStr, char * address, char * position){
     char * temp;
     temp = (char*)malloc(strlen("\r\n  |                        |")+64+10);
     sprintf(temp, "\r\n %-10s | %-64s                       |", address, position);
     targetStr = (char*)realloc(targetStr, strlen(targetStr) + strlen(temp));
     strcat(targetStr, temp);
     free(temp);
+	  return targetStr;
 }                                                            
 
 STATIC char * getMallocInfo(void){
@@ -410,14 +458,20 @@ STATIC char * getMallocInfo(void){
     char * table1Str = (char*)malloc(strlen(TABLE1_HEADER));
     strcpy(table1Str, TABLE1_HEADER);
 
-    utils_add_table1_line(table1Str, "POSITION", "ADDRESS" , "MALLOC", "FREE");
+    table1Str = utils_add_table1_line(table1Str, "POSITION", "ADDRESS" , "MALLOC", "FREE");
 
     while(iteratorPosition->hasNext(iteratorPosition)){
         struct Tree_Node * node = (struct Tree_Node*)iteratorPosition->next(iteratorPosition, hashmapPositionAll);
         struct MallocTrancerInfo * info = (struct MallocTrancerInfo*)node->value;
-        char * ptr_address[10] = "";
-        sprintf(ptr_address, "%#ld", (unsigned long)info->ptr_address);
-        utils_add_table1_line(table1Str, info->position, ptr_address, info->mallocCount, info->freeCount);
+        char ptr_address[10] = "";
+        sprintf(ptr_address, "%#lX", (unsigned long)info->ptr_address);
+				char mallocCount[10] = "";
+        sprintf(mallocCount, "%d", info->mallocCount);
+
+				char freeCount[10] = "";
+        sprintf(freeCount, "%d", info->freeCount);
+
+        table1Str = utils_add_table1_line(table1Str, info->position, ptr_address, mallocCount, freeCount);
     } 
     free(iteratorPosition);
 
@@ -425,15 +479,15 @@ STATIC char * getMallocInfo(void){
     table1Str = (char*)realloc(table1Str, strlen(table1Str) + strlen(TABLE2_HEADER));
     strcat(table1Str, TABLE2_HEADER);
 
-    utils_add_table2_line(table1Str, "ADDRESS", "POSITION");
+    table1Str = utils_add_table2_line(table1Str, "ADDRESS", "POSITION");
 
     struct HashMap_Iterator * iteratorAddress = hashmapAddressAll->createIterator(hashmapAddressAll);
     while(iteratorAddress->hasNext(iteratorAddress)){
         struct Tree_Node * node = (struct Tree_Node*)iteratorAddress->next(iteratorAddress, hashmapAddressAll);
-        struct MallocTrancerInfo * info = (struct MallocTrancerInfo*)node->value;
-        char * ptr_address[10] = "";
-        sprintf(ptr_address, "%#ld", (unsigned long)info->ptr_address);
-        utils_add_table2_line(table1Str, ptr_address, info->position);
+        char * address = (char*)node->key;
+        char ptr_address[10] = "";
+        sprintf(ptr_address, "%#lX", (unsigned long)address);
+        table1Str = utils_add_table2_line(table1Str, ptr_address, node->value);
     } 
 
     strcat(table1Str, "\r\n -----------------------------------------------------------------------------------------------------");
@@ -447,7 +501,7 @@ void * _trace_malloc(size_t size,  const char *file, const char *func,const long
     char addressStr[16] = "";
     snprintf(addressStr, sizeof(addressStr), "%#X", address);
     if(!ret) {
-        log_w("malloc fail!");
+        //log_w("malloc fail!");
         return ret;
     }
 
@@ -491,12 +545,12 @@ void _trace_free(void * ptr,const char *file, const char *func,const long line) 
 
     char * position = (char*)hashmapAddressAll->get(hashmapAddressAll, addressStr);
     if(!position) {
-        log_w("free trance fial, address not malloc find before free");
+        //log_w("free trance fial, address not malloc find before free");
         return;
     }
     struct MallocTrancerInfo * _mallocTrancerInfo = (struct MallocTrancerInfo*)hashmapPositionAll->get(hashmapPositionAll, position);
     if(!_mallocTrancerInfo) {
-        log_w("free trance fial, position not malloc find before free");
+        //log_w("free trance fial, position not malloc find before free");
         return;
     }
     struct MallocTrancerInfo * newMallocTrancerInfo = malloc(sizeof(struct MallocTrancerInfo));
