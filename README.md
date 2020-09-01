@@ -25,4 +25,6 @@ It's just use two tables to record your Malloc and Free operation, later you cou
  ### From STM32CubeMX
  TODO:  https://community.st.com/s/feed/0D53W00000Cg0y8SAB
 
- 
+ ## Known bug
+ 1.没有引用<stdio.h>头文件
+ 2.生成keil工程时，会生成两个.c文件
